@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Appnux — see, uninstall and clean every app on Linux</title>
+  <meta name="description" content="One window for every app on your Linux machine: system packages, Flatpak, Snap and AppImage. See where each one lives, what it takes, when you last used it, and remove it cleanly.">
+  <meta property="og:title" content="Appnux">
+  <meta property="og:description" content="See, uninstall and clean every app on Linux. Native GTK4, about 66 MB of memory.">
+  <meta property="og:image" content="assets/screens/overview-light.png">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --raised: #f2f2f4;
+      --line: #e3e3e8;
+      --fg: #1d1d1f;
+      --muted: #5e5e66;
+      --faint: #8e8e96;
+      --accent: #2563eb;
+      --accent-soft: rgb(37 99 235 / 0.1);
+      --good: #067647;
+      --good-soft: rgb(6 118 71 / 0.1);
+      --bad: #b42318;
+      --bad-soft: rgb(180 35 24 / 0.08);
+      --shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 12px 40px rgb(0 0 0 / 0.08);
+      --radius: 14px;
+      --max: 1120px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #1b1b1d;
+        --surface: #242427;
+        --raised: #2c2c30;
+        --line: #36363b;
+        --fg: #f2f2f7;
+        --muted: #a8a8b0;
+        --faint: #7c7c84;
+        --accent: #6ba3ff;
+        --accent-soft: rgb(107 163 255 / 0.14);
+        --good: #4ade80;
+        --good-soft: rgb(74 222 128 / 0.12);
+        --bad: #ff8a80;
+        --bad-soft: rgb(255 138 128 / 0.1);
+        --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 48px rgb(0 0 0 / 0.45);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 16px/1.6 system-ui, "Cantarell", "Ubuntu", "Inter", "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img { max-width: 100%; display: block; }
+    code, pre { font-family: ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 0.9em; }
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+    section { padding: 88px 0; }
+    section + section { border-top: 1px solid var(--line); }
+    h1, h2, h3 { line-height: 1.2; margin: 0; letter-spacing: -0.01em; }
+    h2 { font-size: clamp(26px, 3.4vw, 36px); }
+    h3 { font-size: 18px; }
+    .eyebrow { color: var(--accent); font-weight: 600; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 10px; }
+    .lead { color: var(--muted); font-size: 18px; max-width: 680px; margin: 14px 0 0; }
+
+    /* Nav */
+    nav { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+    nav .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--fg); font-size: 18px; }
+    .brand img { width: 28px; height: 28px; }
+    nav .links { display: flex; gap: 20px; margin-left: auto; font-size: 15px; }
+    nav .links a { color: var(--muted); }
+    nav .links a:hover { color: var(--fg); text-decoration: none; }
+    @media (max-width: 760px) { nav .links { display: none; } }
+
+    /* Buttons */
+    .buttons { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 10px; font-weight: 600; font-size: 15px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+    .btn:hover { text-decoration: none; border-color: var(--faint); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.primary:hover { filter: brightness(1.08); }
+    .btn small { font-weight: 400; opacity: 0.8; }
+
+    /* Hero */
+    .hero { padding: 72px 0 40px; text-align: center; }
+    .hero h1 { font-size: clamp(34px, 5.6vw, 58px); max-width: 900px; margin: 0 auto; }
+    .hero .lead { margin: 18px auto 0; }
+    .hero .buttons { justify-content: center; }
+    .formats { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+    .chip { padding: 4px 12px; border-radius: 999px; background: var(--raised); color: var(--muted); font-size: 14px; border: 1px solid var(--line); }
+    .shot { margin-top: 48px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--line); background: var(--surface); }
+
+    /* Pain */
+    .pain { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 40px; }
+    @media (max-width: 900px) { .pain { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .pain { grid-template-columns: 1fr; } }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+    .card h3 { margin-bottom: 6px; }
+    .card p { margin: 0; color: var(--muted); font-size: 15px; }
+    .card code { color: var(--fg); background: var(--raised); padding: 1px 6px; border-radius: 5px; }
+
+    /* Features */
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
+    @media (max-width: 900px) { .features { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .features { grid-template-columns: 1fr; } }
+    .icon { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); margin-bottom: 14px; }
+    .icon svg { width: 22px; height: 22px; }
+
+    /* Gallery */
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 32px; padding: 4px; background: var(--raised); border-radius: 12px; width: fit-content; border: 1px solid var(--line); }
+    .tabs button { font: inherit; font-size: 15px; font-weight: 600; padding: 8px 16px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; }
+    .tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .panel .shot { margin-top: 20px; }
+    .caption { color: var(--muted); margin: 14px 0 0; font-size: 15px; }
+
+    /* Two columns */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 40px; }
+    @media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+    .list { list-style: none; margin: 14px 0 0; padding: 0; }
+    .list li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 15px; }
+    .list li:first-child { border-top: 0; }
+    .list li span { color: var(--muted); }
+    .yes { color: var(--good); font-weight: 700; }
+    .no { color: var(--bad); font-weight: 700; }
+    .tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-bottom: 8px; }
+    .tag.good { background: var(--good-soft); color: var(--good); }
+    .tag.bad { background: var(--bad-soft); color: var(--bad); }
+
+    /* Performance */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 40px; }
+    @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    .stat .value { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; }
+    .stat .label { color: var(--muted); font-size: 14px; }
+    .compare { margin-top: 16px; }
+    .bar-row { display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: center; margin-top: 14px; font-size: 15px; }
+    @media (max-width: 560px) { .bar-row { grid-template-columns: 1fr; gap: 6px; } }
+    .bar { height: 30px; border-radius: 6px; background: var(--raised); position: relative; overflow: hidden; }
+    .bar > div { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; color: #fff; font-weight: 700; font-size: 14px; white-space: nowrap; }
+    .bar .ours { background: var(--accent); }
+    .bar .web { background: #8e8e96; }
+    .note { color: var(--faint); font-size: 14px; margin-top: 14px; }
+    .how { margin: 14px 0 0; padding-left: 20px; color: var(--muted); font-size: 15px; }
+    .how li { margin: 6px 0; }
+    .how b { color: var(--fg); }
+
+    /* Install */
+    .steps { counter-reset: step; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
+    @media (max-width: 900px) { .steps { grid-template-columns: 1fr; } }
+    pre { background: var(--raised); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; margin: 12px 0 0; line-height: 1.5; }
+    .use { counter-reset: use; list-style: none; padding: 0; margin: 32px 0 0; display: grid; gap: 12px; }
+    .use li { counter-increment: use; display: grid; grid-template-columns: 40px 1fr; gap: 14px; align-items: start; }
+    .use li::before { content: counter(use); width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 800; }
+    .use b { display: block; }
+    .use span { color: var(--muted); font-size: 15px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 15px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    footer { padding: 40px 0 56px; color: var(--faint); font-size: 14px; border-top: 1px solid var(--line); }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="assets/logo.svg" alt="">Appnux</a>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#screens">Screenshots</a>
+      <a href="#cleaner">Cleaner</a>
+      <a href="#performance">Performance</a>
+      <a href="#install">Install</a>
+    </div>
+    <a class="btn" href="https://github.com/MinduLabs/Appnux">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Every app on your Linux machine. Find it, see what it takes, remove it.</h1>
+    <p class="lead">Apps arrive four ways: system packages, Flatpak, Snap and AppImage files you downloaded. Appnux lists them all in one window, shows where each one lives, and removes it cleanly, leftovers included.</p>
+    <div class="buttons">
+      <a class="btn primary" href="https://github.com/MinduLabs/Appnux/releases/latest">Download .deb <small>0.5 MB</small></a>
+      <a class="btn" href="https://github.com/MinduLabs/Appnux/releases/latest">Download AppImage <small>36 MB</small></a>
+      <a class="btn" href="#install">Other distros</a>
+    </div>
+    <div class="formats">
+      <span class="chip">apt · Debian / Ubuntu</span>
+      <span class="chip">pacman · Arch</span>
+      <span class="chip">dnf · Fedora / RHEL</span>
+      <span class="chip">Flatpak</span>
+      <span class="chip">Snap</span>
+      <span class="chip">AppImage</span>
+    </div>
+    <picture>
+      <source srcset="assets/screens/overview-dark.png" media="(prefers-color-scheme: dark)">
+      <img class="shot" src="assets/screens/overview-light.png" alt="Appnux overview: free disk space split into apps, app data, caches and developer caches, with quick wins and the largest apps" width="1240" height="800">
+    </picture>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">The problem</div>
+    <h2>Four ways to install. No one place to find them.</h2>
+    <p class="lead">Each format keeps its apps somewhere else, and none of them cleans up after itself. Appnux reads all four, with the tools each one already uses.</p>
+    <div class="pain">
+      <div class="card"><h3>System packages</h3><p>Read from <code>dpkg</code>, <code>pacman</code> or <code>rpm</code>. Shows the program the package runs, like <code>/usr/bin/vlc</code>.</p></div>
+      <div class="card"><h3>Flatpak</h3><p>User and system installs, from <code>~/.local/share/flatpak</code> or <code>/var/lib/flatpak</code>, with their data in <code>~/.var/app</code>.</p></div>
+      <div class="card"><h3>Snap</h3><p>Every snap with its mount in <code>/snap</code>, its data in <code>~/snap</code> and old revisions kept for rollback.</p></div>
+      <div class="card"><h3>AppImage</h3><p>Files you downloaded and clicked, wherever you keep them: Downloads, Desktop, Applications or anywhere in home.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="eyebrow">Features</div>
+    <h2>Everything you need before you remove an app</h2>
+    <div class="features">
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+        <h3>Where it lives</h3><p>Every row says the format and the path. One click opens the folder in your file manager.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>When you last used it</h3><p>From GNOME's app history, the program's access time and the app's own folders. Filter by "Not used in 3 months".</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+        <h3>What it really takes</h3><p>The package plus its config, data and cache in your home folder, with hard links counted once.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 6V3M16 6V3M8 21v-3M16 21v-3"/></svg></div>
+        <h3>Memory per app</h3><p>Which apps are running and how much memory each one uses, summed over all its processes.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></div>
+        <h3>Uninstall or Deep purge</h3><p>Uninstall keeps your settings. Deep purge also deletes what the app left behind, each folder marked Sure, Likely or Unsure.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6-9 9H5v-6z"/><path d="M4 21h16"/></svg></div>
+        <h3>A cleaner that only cleans</h3><p>Package caches, old logs, thumbnails and developer tool caches. Never your projects, Docker or your files.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="screens">
+  <div class="wrap">
+    <div class="eyebrow">Screenshots</div>
+    <h2>Native GTK4, light and dark</h2>
+    <p class="lead">Built with GTK4 and libadwaita, so it looks and behaves like the rest of your desktop, and follows your accent colour and theme.</p>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-panel="p-apps">Apps</button>
+      <button role="tab" aria-selected="false" data-panel="p-cleaner">Cleaner</button>
+      <button role="tab" aria-selected="false" data-panel="p-overview">Overview</button>
+      <button role="tab" aria-selected="false" data-panel="p-activity">Activity</button>
+      <button role="tab" aria-selected="false" data-panel="p-settings">Settings</button>
+    </div>
+    <div class="panel active" id="p-apps">
+      <picture>
+        <source srcset="assets/screens/apps-dark.png" media="(prefers-color-scheme: dark)">
+        <img class="shot" src="assets/screens/apps-light.png" alt="Apps: every app with its format, path, last use, size and memory" width="1240" height="800" loading="lazy">
+      </picture>
+      <p class="caption">Search, filter by format or by last use, sort by size or memory. Remove from the row, or open the details.</p>
+    </div>
+    <div class="panel" id="p-cleaner">
+      <img class="shot" src="assets/screens/cleaner-light.png" alt="Cleaner: sections of caches with sizes and ticks" width="1240" height="800" loading="lazy">
+      <p class="caption">Sections fold open to show each item. Only what is safe to remove is ticked for you.</p>
+    </div>
+    <div class="panel" id="p-overview">
+      <picture>
+        <source srcset="assets/screens/overview-dark.png" media="(prefers-color-scheme: dark)">
+        <img class="shot" src="assets/screens/overview-light.png" alt="Overview of disk use" width="1240" height="800" loading="lazy">
+      </picture>
+      <p class="caption">Where your disk space went, and the largest caches you can clean right now.</p>
+    </div>
+    <div class="panel" id="p-activity">
+      <img class="shot" src="assets/screens/activity-light.png" alt="Activity log" width="1240" height="800" loading="lazy">
+      <p class="caption">Every uninstall and cleanup, with each step it ran and whether it worked.</p>
+    </div>
+    <div class="panel" id="p-settings">
+      <img class="shot" src="assets/screens/settings-light.png" alt="Settings" width="1240" height="800" loading="lazy">
+      <p class="caption">Theme, hardware acceleration and how much of the system log to keep.</p>
+    </div>
+  </div>
+</section>
+
+<section id="cleaner">
+  <div class="wrap">
+    <div class="eyebrow">Cleaner</div>
+    <h2>Caches and temporary files. Nothing that gets in the way of work.</h2>
+    <p class="lead">The only cost of cleaning should be time: a slower next install or first start. Where a tool has its own clean command, Appnux runs that command.</p>
+    <div class="split">
+      <div class="card">
+        <span class="tag good">Cleaned</span>
+        <h3>Rebuilt or downloaded again by itself</h3>
+        <ul class="list">
+          <li><b class="yes">✓</b><div>APT, pacman or DNF download cache <span>· packages already installed</span></div></li>
+          <li><b class="yes">✓</b><div>System journal above the size you choose</div></li>
+          <li><b class="yes">✓</b><div>Thumbnails</div></li>
+          <li><b class="yes">✓</b><div>npm, Yarn, pip, uv, Go caches <span>· with each tool's own command</span></div></li>
+          <li><b class="yes">✓</b><div>pnpm store <span>· only packages no project uses</span></div></li>
+          <li><b class="yes">✓</b><div>Caches of apps that are not running</div></li>
+          <li><b class="yes">✓</b><div>Menu shortcuts to programs that were deleted</div></li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="tag bad">Never touched</span>
+        <h3>Things a project or a service needs</h3>
+        <ul class="list">
+          <li><b class="no">✕</b><div><code>node_modules</code> and Cargo <code>target</code> <span>· your projects need them</span></div></li>
+          <li><b class="no">✕</b><div>Docker images, containers and volumes</div></li>
+          <li><b class="no">✕</b><div>Test browsers for Cypress, Playwright, Puppeteer</div></li>
+          <li><b class="no">✕</b><div>Folders no installed app claims</div></li>
+          <li><b class="no">✕</b><div><code>~/.ssh</code>, <code>~/.gnupg</code>, keyrings, your documents</div></li>
+        </ul>
+      </div>
+    </div>
+    <div class="split">
+      <div class="card">
+        <h3>Safe by construction</h3>
+        <p>Every path is checked before it is removed: inside your home folder, inside the folders Appnux cleans, never one of those folders itself, never through a symlink. No shell commands are built.</p>
+      </div>
+      <div class="card">
+        <h3>One password, checked twice</h3>
+        <p>System work goes through PolicyKit in one prompt. Before removing a package, the helper runs the package manager's dry run again and refuses if the result changed since you approved it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="performance">
+  <div class="wrap">
+    <div class="eyebrow">Performance</div>
+    <h2>Small, quiet, fast</h2>
+    <p class="lead">A utility should not cost more than the space it saves. Measured on Ubuntu 22.04 with 73 apps installed.</p>
+    <div class="stats">
+      <div class="card stat"><div class="value">66 MB</div><div class="label">memory, whole app (PSS)</div></div>
+      <div class="card stat"><div class="value">0%</div><div class="label">CPU when idle</div></div>
+      <div class="card stat"><div class="value">0.4 s</div><div class="label">to find every app</div></div>
+      <div class="card stat"><div class="value">0.5 MB</div><div class="label">.deb package</div></div>
+    </div>
+    <div class="split">
+      <div class="card">
+        <h3>Memory, same features</h3>
+        <div class="compare">
+          <div class="bar-row"><span>Appnux, native GTK4</span><div class="bar"><div class="ours" style="width:23.6%">66 MB</div></div></div>
+          <div class="bar-row"><span>Our earlier web UI (Tauri)</span><div class="bar"><div class="web" style="width:100%">280 MB</div></div></div>
+        </div>
+        <p class="note">The web version ran three processes (app, WebKit page, WebKit network). Appnux runs one.</p>
+      </div>
+      <div class="card">
+        <h3>How it stays light</h3>
+        <ul class="how">
+          <li><b>One native process.</b> GTK4 and libadwaita, no browser engine.</li>
+          <li><b>CPU drawing by default.</b> The cairo renderer takes half the memory of OpenGL; turn on hardware acceleration in Settings if you prefer.</li>
+          <li><b>Scans on a small pool.</b> At most four worker threads; the window never waits.</li>
+          <li><b>Targeted scans.</b> Only the folders that matter, never the whole disk.</li>
+          <li><b>Polling only when you look.</b> Memory per app updates only while Apps is open.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="eyebrow">Install</div>
+    <h2>Get Appnux</h2>
+    <p class="lead">Needs GTK 4.6 and libadwaita 1.1 or newer: Ubuntu 22.04+, Debian 12+, Linux Mint 21+, Fedora 36+, Arch and its derivatives.</p>
+    <div class="steps">
+      <div class="card">
+        <h3>Debian, Ubuntu, Mint</h3>
+        <p>Install the .deb from the latest release. It includes the PolicyKit rule for system cleanup.</p>
+        <pre>sudo apt install ./appnux_0.1.0_amd64.deb</pre>
+      </div>
+      <div class="card">
+        <h3>Any distro: AppImage</h3>
+        <p>Download, make it executable, run. GTK4 and libadwaita are inside.</p>
+        <pre>chmod +x Appnux-0.1.0-x86_64.AppImage
+./Appnux-0.1.0-x86_64.AppImage</pre>
+      </div>
+      <div class="card">
+        <h3>From source</h3>
+        <p>Rust 1.92+ and the GTK4 / libadwaita development files.</p>
+        <pre>git clone https://github.com/MinduLabs/Appnux
+cd appnux
+cargo build --release -p appnux
+./target/release/appnux</pre>
+      </div>
+    </div>
+
+    <h2 style="margin-top:72px">Using it</h2>
+    <ol class="use">
+      <li><div><b>Open Apps.</b><span>Every app, its format and where it lives. Pick "Not used in 3 months" to see what you forgot about.</span></div></li>
+      <li><div><b>Remove what you don't need.</b><span>The bin icon on a row uninstalls. Deep purge in the details also deletes the settings and data the app left in your home folder.</span></div></li>
+      <li><div><b>Open Cleaner.</b><span>What is safe is already ticked. Review the list, then clean. System caches ask for your password once.</span></div></li>
+      <li><div><b>Check Activity.</b><span>Each step that ran, with a ✓ or the reason it failed.</span></div></li>
+    </ol>
+
+    <table>
+      <thead><tr><th>Removing</th><th>What Appnux runs</th></tr></thead>
+      <tbody>
+        <tr><td>System package</td><td><code>apt-get remove</code> / <code>purge</code>, <code>pacman -R</code> / <code>-Rns</code>, <code>dnf remove</code>, after a dry run</td></tr>
+        <tr><td>Flatpak</td><td><code>flatpak uninstall</code> (with <code>--delete-data</code> for Deep purge)</td></tr>
+        <tr><td>Snap</td><td><code>snap remove</code> (with <code>--purge</code> for Deep purge)</td></tr>
+        <tr><td>AppImage</td><td>Deletes the AppImage file and its menu shortcut</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Appnux · free and open source · made for Linux</span>
+    <a href="https://github.com/MinduLabs/Appnux">github.com/MinduLabs/Appnux</a>
+  </div>
+</footer>
+
+<script>
+  // Screenshot tabs: one panel at a time, arrow keys move between tabs.
+  const tabs = [...document.querySelectorAll('.tabs button')];
+  function show(tab) {
+    tabs.forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', on);
+      document.getElementById(t.dataset.panel).classList.toggle('active', on);
+    });
+  }
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => show(tab));
+    tab.addEventListener('keydown', e => {
+      const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (step) { const next = tabs[(i + step + tabs.length) % tabs.length]; show(next); next.focus(); }
+    });
+  });
+</script>
+</body>
+</html>

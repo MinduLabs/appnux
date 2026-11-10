@@ -1,0 +1,24 @@
+Appnux
+Copyright (C) 2026 MinduLabs and the Appnux contributors
+https://github.com/MinduLabs/Appnux
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See the LICENSE file for the full text.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+ADDITIONAL TERM UNDER SECTION 7(b) OF THE GPL-3.0 (attribution)
+
+Anyone who conveys this program, a modified version of it, or a work based on
+any part of its source code must keep this NOTICE file and give visible credit
+in the following form, or an equivalent form that is at least as visible:
+
+    Based on Appnux by MinduLabs (https://github.com/MinduLabs/Appnux)
+
+The credit must appear in the README or main documentation of the work, and,
+for a program with an interactive user interface, in its "About" screen or an
+equivalent place where legal notices are shown.

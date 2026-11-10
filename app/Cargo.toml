@@ -1,0 +1,24 @@
+[package]
+name = "appnux"
+description = "See, uninstall and clean every app on Linux."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "appnux"
+path = "src/main.rs"
+
+[dependencies]
+appnux-core.workspace = true
+base64.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+# Ubuntu 22.04 ships GTK 4.6 and libadwaita 1.1: the oldest the app runs on.
+gtk.workspace = true
+adw.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,43 @@
+/* Appnux on top of Adwaita: only what Adwaita has no class for. */
+
+.hero { font-size: 26pt; font-weight: 700; }
+.stat-value { font-size: 18pt; font-weight: 700; }
+
+button.stat { padding: 0; }
+button.stat:hover .stat-value { color: @accent_color; }
+
+/* A row's title turns the accent color on hover, like links do. */
+row.activatable:hover label.title { color: @accent_color; }
+row.monospace-title label.title { font-family: monospace; font-size: 0.9em; }
+
+.skeleton {
+  background-color: alpha(currentColor, 0.1);
+  border-radius: 6px;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.45; }
+  100% { opacity: 1; }
+}
+
+.callout { padding: 8px 12px; border-radius: 8px; }
+.callout.info { background-color: alpha(currentColor, 0.06); }
+.callout.info image { color: @accent_color; }
+.callout.warning { background-color: alpha(@warning_color, 0.14); }
+.callout.warning image { color: @warning_color; }
+.callout.error { background-color: alpha(@error_color, 0.12); }
+.callout.error image { color: @error_color; }
+.callout.safe { background-color: alpha(@success_color, 0.12); }
+.callout.safe image { color: @success_color; }
+
+.code-block { padding: 8px 10px; border-radius: 8px; background-color: alpha(currentColor, 0.06); }
+
+.badge { padding: 1px 6px; border-radius: 4px; font-size: 0.8em; font-weight: 600; }
+.badge-sure { background-color: alpha(@success_color, 0.15); color: @success_color; }
+.badge-likely { background-color: alpha(@warning_color, 0.16); color: @warning_color; }
+.badge-unsure { background-color: alpha(currentColor, 0.08); }
+.badge-info { background-color: alpha(@accent_bg_color, 0.15); color: @accent_color; }
+
+label.success { color: @success_color; }
+image.warning { color: @warning_color; }

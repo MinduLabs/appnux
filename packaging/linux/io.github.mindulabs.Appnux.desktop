@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Appnux
+GenericName=App Manager
+Comment=See, uninstall and clean every app on Linux
+Exec=appnux
+Icon=io.github.mindulabs.Appnux
+Terminal=false
+Categories=GTK;Utility;System;PackageManager;
+Keywords=uninstall;cleaner;disk;flatpak;snap;appimage;
+StartupNotify=true
